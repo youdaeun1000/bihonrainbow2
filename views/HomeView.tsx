@@ -54,13 +54,12 @@ const HomeView: React.FC<HomeViewProps> = ({ user, meetings, onSelectMeeting, on
             {user ? `${user.nickname}님, 반가워요!` : '안녕하세요!'} <br/> 
             <span className="text-[#2DD4BF]">오늘 어떤 즐거움을 찾을까요?</span>
           </h2>
-          <p className="text-sm text-slate-400 font-light">비 온 뒤 새벽처럼 맑은 일상을 공유해요.</p>
         </div>
         <AppLogo size={56} animate className="-mt-1" />
       </header>
 
       {/* Category Tabs & Sort Toggles */}
-      <div className="flex flex-col gap-5 sticky top-20 z-10 bg-[#F8FAFC]/95 backdrop-blur-md py-3 -mx-2 px-2">
+      <div className="flex flex-col gap-5 sticky top-24 z-10 bg-[#F8FAFC]/95 backdrop-blur-md py-3 -mx-2 px-2">
         <section className="flex gap-2 overflow-x-auto scrollbar-hide">
           {CATEGORIES.map(cat => (
             <button

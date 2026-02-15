@@ -8,8 +8,10 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ title, showBack, onBack }) => {
+  const isMainTitle = title === '비혼뒤맑음';
+
   return (
-    <header className="h-20 flex items-center justify-between px-6 bg-white sticky top-0 z-20 border-b border-slate-100">
+    <header className={`${isMainTitle ? 'h-24' : 'h-20'} flex items-center justify-between px-6 bg-white sticky top-0 z-20 border-b border-slate-100 transition-all`}>
       <div className="flex items-center gap-4">
         {showBack && (
           <button onClick={onBack} className="text-slate-700 p-2 -ml-2 hover:bg-slate-50 rounded-full transition-colors">
@@ -18,7 +20,16 @@ const Header: React.FC<HeaderProps> = ({ title, showBack, onBack }) => {
             </svg>
           </button>
         )}
-        <h1 className="text-lg font-bold text-slate-800 tracking-tight">{title}</h1>
+        <div className="flex flex-col">
+          {isMainTitle && (
+            <p className="text-[10px] text-slate-400 font-medium mb-1 tracking-tight">
+              비혼 뒤, 맑은 삶을 꿈꾸다.
+            </p>
+          )}
+          <h1 className={`${isMainTitle ? 'text-xl' : 'text-lg'} font-bold text-slate-800 tracking-tight leading-none`}>
+            {title}
+          </h1>
+        </div>
       </div>
     </header>
   );

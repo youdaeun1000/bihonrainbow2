@@ -35,9 +35,10 @@ const MyPageView: React.FC<MyPageViewProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
   const [isLoadingBlocks, setIsLoadingBlocks] = useState(false);
+  const [showBlockedList, setShowBlockedList] = useState(false);
 
   useEffect(() => {
-    if (user?.blockedUserIds && user.blockedUserIds.length > 0) {
+    if (showBlockedList && user?.blockedUserIds && user.blockedUserIds.length > 0) {
       const fetchBlockedUsers = async () => {
         setIsLoadingBlocks(true);
         try {
@@ -54,10 +55,10 @@ const MyPageView: React.FC<MyPageViewProps> = ({
         }
       };
       fetchBlockedUsers();
-    } else {
+    } else if (!showBlockedList) {
       setBlockedUsers([]);
     }
-  }, [user?.blockedUserIds]);
+  }, [showBlockedList, user?.blockedUserIds]);
 
   const { upcomingMeetings, pastMeetings } = useMemo(() => {
     const now = new Date().getTime();
@@ -71,11 +72,9 @@ const MyPageView: React.FC<MyPageViewProps> = ({
       })
       .filter((m): m is (Meeting & { isPrivate: boolean }) => m !== null);
 
-    // 모임 시간으로부터 24시간이 지나지 않았으면 '진행 예정(또는 현재 진행)'으로 분류
     const upcoming = joined.filter(m => new Date(m.date).getTime() + oneDayInMs >= now)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     
-    // 모임 시간으로부터 24시간이 지나야 '참여 완료'로 분류
     const past = joined.filter(m => new Date(m.date).getTime() + oneDayInMs < now)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -113,6 +112,58 @@ const MyPageView: React.FC<MyPageViewProps> = ({
           <p className="text-sm text-slate-400 font-light leading-relaxed">
             나만의 소중한 일상을 기록하고 <br/> 새로운 친구들을 만나보세요.
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  // 차단 멤버 관리 서브 페이지 렌더링
+  if (showBlockedList) {
+    return (
+      <div className="flex flex-col gap-8 px-6 pt-10 pb-40 page-enter">
+        <header className="flex items-center gap-4">
+          <button onClick={() => setShowBlockedList(false)} className="p-2 -ml-2 text-slate-400 hover:text-slate-600">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+            </svg>
+          </button>
+          <h2 className="text-xl font-bold text-slate-800">차단 멤버 관리</h2>
+        </header>
+
+        <div className="flex flex-col gap-4">
+          {isLoadingBlocks ? (
+            <div className="py-20 flex flex-col items-center gap-4">
+              <div className="w-8 h-8 border-4 border-teal-100 border-t-teal-500 rounded-full animate-spin"></div>
+              <p className="text-xs font-medium text-slate-400">목록을 불러오고 있습니다...</p>
+            </div>
+          ) : blockedUsers.length > 0 ? (
+            blockedUsers.map(bUser => (
+              <div 
+                key={bUser.id} 
+                className="w-full bg-white rounded-3xl p-5 border border-slate-100 flex justify-between items-center shadow-sm"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-sm font-bold text-slate-400 border border-slate-100">
+                    {bUser.nickname.substring(0, 1)}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold text-slate-700">{bUser.nickname}</span>
+                    <span className="text-[10px] text-slate-300 font-medium">활동 제한됨</span>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => onUnblockUser(bUser.id)}
+                  className="text-[11px] font-bold text-rose-500 bg-rose-50 px-4 py-2 rounded-full hover:bg-rose-100 transition-all active:scale-95"
+                >
+                  차단 해제
+                </button>
+              </div>
+            ))
+          ) : (
+            <div className="py-20 text-center border-2 border-dashed border-slate-100 rounded-[32px] bg-slate-50/30 flex flex-col gap-2 items-center">
+              <p className="text-[12px] text-slate-300 font-medium tracking-tight">차단한 사용자가 없습니다.</p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -171,37 +222,26 @@ const MyPageView: React.FC<MyPageViewProps> = ({
         </div>
 
         <div className="flex flex-col items-center gap-3 w-full">
-          {isEditing ? (
-            <div className="flex flex-col gap-6 w-full mt-4">
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-teal-600 uppercase tracking-widest px-1">Nickname</label>
-                <input 
-                  value={editNickname}
-                  onChange={(e) => setEditNickname(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-100 px-4 py-3 rounded-2xl text-center font-bold text-slate-800 focus:outline-none focus:border-teal-200 transition-all"
-                  placeholder="닉네임 입력"
-                />
-              </div>
+          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">{isEditing ? '프로필 수정' : user.nickname}</h2>
+          {isEditing && (
+            <div className="flex flex-col gap-1 w-full max-w-[200px]">
+              <input 
+                value={editNickname}
+                onChange={(e) => setEditNickname(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-100 px-4 py-3 rounded-2xl text-center font-bold text-slate-800 focus:outline-none focus:border-teal-200 transition-all"
+                placeholder="닉네임 입력"
+              />
             </div>
-          ) : (
-            <>
-              <h2 className="text-2xl font-bold text-slate-800 tracking-tight">{user.nickname}</h2>
-              <span className="text-[11px] font-bold text-teal-600 bg-teal-50 px-3 py-1 rounded-full border border-teal-100/50">
-                {user.location} 지역 기반
-              </span>
-            </>
           )}
         </div>
       </section>
 
       {/* Timeline Section: Upcoming */}
       <section className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-           <h3 className="text-xs font-bold text-slate-800 flex items-center gap-2 uppercase tracking-widest">
-              <div className="w-1 h-3 bg-teal-400 rounded-full"></div>
-              진행 예정 모임 ({upcomingMeetings.length})
-           </h3>
-        </div>
+        <h3 className="text-xs font-bold text-slate-800 flex items-center gap-2 uppercase tracking-widest">
+           <div className="w-1 h-3 bg-teal-400 rounded-full"></div>
+           진행 예정 모임 ({upcomingMeetings.length})
+        </h3>
         <div className="flex flex-col gap-3">
           {upcomingMeetings.map(meeting => (
             <button 
@@ -224,7 +264,6 @@ const MyPageView: React.FC<MyPageViewProps> = ({
           {upcomingMeetings.length === 0 && (
             <div className="py-12 text-center border border-dashed border-slate-100 rounded-3xl bg-slate-50/50 flex flex-col gap-2 items-center">
               <p className="text-[11px] text-slate-400 font-medium">참여 예정인 모임이 없습니다.</p>
-              <button className="text-[10px] font-bold text-teal-600 bg-white px-3 py-1 rounded-full border border-teal-50">새 모임 찾기</button>
             </div>
           )}
         </div>
@@ -255,72 +294,51 @@ const MyPageView: React.FC<MyPageViewProps> = ({
               <span className="text-[10px] font-bold text-slate-300 bg-white px-2 py-0.5 rounded border border-slate-100">완료</span>
             </button>
           ))}
-          {pastMeetings.length === 0 && (
-            <div className="py-8 text-center border border-dashed border-slate-100 rounded-3xl">
-              <p className="text-[11px] text-slate-300 font-medium">완료된 모임 내역이 없습니다.</p>
-            </div>
-          )}
         </div>
       </section>
 
-      {/* Blocked Users Management Section */}
-      <section className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold text-rose-400 flex items-center gap-2 uppercase tracking-widest">
-             <div className="w-1 h-3 bg-rose-300 rounded-full"></div>
-             차단 멤버 관리 ({user.blockedUserIds.length})
-          </h3>
-          {isLoadingBlocks && (
-            <div className="w-3 h-3 border-2 border-rose-100 border-t-rose-400 rounded-full animate-spin"></div>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-3">
-          {blockedUsers.length > 0 ? (
-            blockedUsers.map(bUser => (
-              <div 
-                key={bUser.id} 
-                className="w-full bg-white rounded-3xl p-5 border border-slate-100 flex justify-between items-center shadow-sm"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-sm font-bold text-slate-400 border border-slate-100">
-                    {bUser.nickname.substring(0, 1)}
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-slate-700">{bUser.nickname}</span>
-                    <span className="text-[10px] text-slate-300 font-medium">활동 제한됨</span>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => onUnblockUser(bUser.id)}
-                  className="text-[11px] font-bold text-rose-500 bg-rose-50 px-4 py-2 rounded-full hover:bg-rose-100 transition-all active:scale-95"
-                >
-                  차단 해제
-                </button>
-              </div>
-            ))
-          ) : (
-            <div className="py-12 text-center border-2 border-dashed border-slate-100 rounded-[32px] bg-slate-50/30 flex flex-col gap-2 items-center">
-              <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-slate-200 mb-1">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.998 5.998 0 00-5.48-5.974m0 0a6.001 6.001 0 00-5.481 5.974m10.962 0A10.4 10.4 0 0112 21.01m-5.962-2.292a10.4 10.4 0 01-5.962-2.292m0 0a3 3 0 014.681-2.72m4.681 2.72l-.001.031c0 .225.012.447.037.666A11.944 11.944 0 0112 21c2.17 0 4.207-.576 5.963-1.584" />
-                </svg>
-              </div>
-              <p className="text-[11px] text-slate-300 font-medium tracking-tight">차단한 사용자가 없습니다.</p>
+      {/* Settings / Management Section */}
+      <section className="flex flex-col gap-3">
+        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1 mb-1">Account & Privacy</h3>
+        
+        <button 
+          onClick={() => setShowBlockedList(true)}
+          className="w-full bg-white p-5 rounded-2xl border border-slate-100 flex items-center justify-between group active:bg-slate-50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-rose-50 rounded-lg flex items-center justify-center text-rose-500">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+              </svg>
             </div>
-          )}
-        </div>
-      </section>
-
-      <footer className="pt-10 border-t border-slate-100 flex flex-col items-center gap-4">
-        <button onClick={onLogout} className="text-[11px] font-bold text-slate-300 hover:text-[#2DD4BF] transition-colors uppercase tracking-widest">
-          Logout Membership
+            <span className="text-sm font-bold text-slate-700">차단 멤버 관리</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-300">{user.blockedUserIds.length}명</span>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-300 group-hover:text-teal-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+          </div>
         </button>
+
+        <button onClick={onLogout} className="w-full bg-white p-5 rounded-2xl border border-slate-100 flex items-center justify-between group active:bg-slate-50 transition-colors">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+              </svg>
+            </div>
+            <span className="text-sm font-bold text-slate-700">로그아웃</span>
+          </div>
+        </button>
+      </section>
+
+      <footer className="pt-4 flex flex-col items-center gap-4">
         <button 
           onClick={onWithdrawal}
-          className="text-[10px] font-medium text-slate-200 hover:text-rose-400 transition-colors underline underline-offset-4 decoration-slate-200"
+          className="text-[10px] font-medium text-slate-300 hover:text-rose-400 transition-colors underline underline-offset-4"
         >
-          회원 탈퇴하기
+          서비스 탈퇴하기
         </button>
       </footer>
     </div>

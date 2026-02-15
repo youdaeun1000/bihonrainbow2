@@ -16,7 +16,6 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onComplete }) => {
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [selectedValues, setSelectedValues] = useState<string[]>([]);
   const [bio, setBio] = useState('');
-  const [location, setLocation] = useState('서울');
 
   const toggleInterest = (interest: string) => {
     setSelectedInterests(prev => 
@@ -33,8 +32,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onComplete }) => {
   const handleFinish = () => {
     onComplete({
       interests: [...selectedInterests, ...selectedValues],
-      bio,
-      location
+      bio
     });
   };
 
@@ -87,24 +85,6 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onComplete }) => {
       </section>
 
       <div className="bg-white p-8 rounded-[40px] border border-teal-50 shadow-2xl shadow-teal-900/5 flex flex-col gap-6">
-        <div>
-          <label className="block text-[10px] font-black text-teal-600 mb-3 uppercase tracking-[0.2em]">My Location</label>
-          <div className="relative">
-            <select
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className="w-full px-5 py-4 rounded-2xl bg-teal-50/30 border border-transparent text-slate-800 focus:outline-none focus:bg-white focus:border-teal-200 transition-all text-sm font-medium appearance-none"
-            >
-              <option>서울</option><option>경기</option><option>인천</option><option>부산</option><option>대구</option><option>기타</option>
-            </select>
-            <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-teal-400">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
         <div>
           <label className="block text-[10px] font-black text-teal-600 mb-3 uppercase tracking-[0.2em]">Brief Introduction</label>
           <textarea
