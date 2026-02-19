@@ -6,10 +6,11 @@ export interface UserParticipation {
 
 export interface UserProfile {
   id: string;
-  phone: string;
+  email: string;
   nickname: string;
   age: number;
   isCertified: boolean;
+  isSubscribed: boolean; // 구독 여부 추가
   interests: string[];
   bio: string;
   location: string;
@@ -45,7 +46,8 @@ export interface ChatMessage {
 
 export type ViewState = 
   | 'HOME' 
-  | 'AUTH_PHONE' 
+  | 'AUTH_EMAIL' 
+  | 'VERIFY_EMAIL'
   | 'PROFILE_SETUP' 
   | 'WELCOME' 
   | 'MEETING_DETAIL' 
@@ -53,4 +55,5 @@ export type ViewState =
   | 'CHATTING' 
   | 'CHAT_ROOM'
   | 'CREATE_MEETING'
-  | 'EDIT_MEETING';
+  | 'EDIT_MEETING'
+  | 'SUBSCRIPTION'; // 구독 뷰 추가

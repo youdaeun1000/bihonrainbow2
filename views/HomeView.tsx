@@ -12,24 +12,44 @@ interface HomeViewProps {
 }
 
 type SortOrder = 'START_SOON' | 'NEWEST';
+type DateFilter = 'ALL' | 'TODAY' | 'TOMORROW' | 'DAY_AFTER';
 
 const HomeView: React.FC<HomeViewProps> = ({ user, meetings, onSelectMeeting, onCreateClick }) => {
   const [selectedCategory, setSelectedCategory] = useState('전체');
   const [sortOrder, setSortOrder] = useState<SortOrder>('START_SOON');
+  const [dateFilter, setDateFilter] = useState<DateFilter>('ALL');
 
   const filteredAndSortedMeetings = useMemo(() => {
-    const now = new Date().getTime();
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     const oneDayInMs = 24 * 60 * 60 * 1000;
     
-    // 1. 카테고리 필터링 및 "모임 시간으로부터 하루가 지나지 않은 모임"만 추출
+    const tomorrow = today + oneDayInMs;
+    const dayAfter = today + (oneDayInMs * 2);
+    const threeDaysAfter = today + (oneDayInMs * 3);
+
     let result = meetings.filter(m => {
       const meetingTime = new Date(m.date).getTime();
-      const isActive = meetingTime + oneDayInMs >= now;
+      
+      // 기본적으로 지나지 않은 모임만 (모임 시간 + 24시간 이내인 것들)
+      const isActive = meetingTime + oneDayInMs >= now.getTime();
       const categoryMatch = selectedCategory === '전체' || m.category === selectedCategory;
-      return isActive && categoryMatch;
+      
+      if (!isActive || !categoryMatch) return false;
+
+      // 날짜 필터 적용
+      if (dateFilter === 'TODAY') {
+        return meetingTime >= today && meetingTime < tomorrow;
+      } else if (dateFilter === 'TOMORROW') {
+        return meetingTime >= tomorrow && meetingTime < dayAfter;
+      } else if (dateFilter === 'DAY_AFTER') {
+        return meetingTime >= dayAfter && meetingTime < threeDaysAfter;
+      }
+      
+      return true; // 'ALL'
     });
 
-    // 2. 정렬 로직 적용
+    // 정렬 로직 적용
     result = [...result].sort((a, b) => {
       if (sortOrder === 'START_SOON') {
         const dateA = new Date(a.date).getTime();
@@ -43,7 +63,36 @@ const HomeView: React.FC<HomeViewProps> = ({ user, meetings, onSelectMeeting, on
     });
 
     return result;
-  }, [meetings, selectedCategory, sortOrder]);
+  }, [meetings, selectedCategory, sortOrder, dateFilter]);
+
+  // 각 날짜별 모임 개수 계산 (카테고리 필터는 적용된 상태)
+  const dateCounts = useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const oneDayInMs = 24 * 60 * 60 * 1000;
+    
+    const tomorrow = today + oneDayInMs;
+    const dayAfter = today + (oneDayInMs * 2);
+    const threeDaysAfter = today + (oneDayInMs * 3);
+
+    const counts = { TODAY: 0, TOMORROW: 0, DAY_AFTER: 0, ALL: 0 };
+
+    meetings.forEach(m => {
+      const categoryMatch = selectedCategory === '전체' || m.category === selectedCategory;
+      if (!categoryMatch) return;
+
+      const meetingTime = new Date(m.date).getTime();
+      const isActive = meetingTime + oneDayInMs >= now.getTime();
+      if (!isActive) return;
+
+      counts.ALL++;
+      if (meetingTime >= today && meetingTime < tomorrow) counts.TODAY++;
+      else if (meetingTime >= tomorrow && meetingTime < dayAfter) counts.TOMORROW++;
+      else if (meetingTime >= dayAfter && meetingTime < threeDaysAfter) counts.DAY_AFTER++;
+    });
+
+    return counts;
+  }, [meetings, selectedCategory]);
 
   return (
     <div className="flex flex-col gap-8 pt-6 px-6 pb-40 page-enter">
@@ -58,8 +107,9 @@ const HomeView: React.FC<HomeViewProps> = ({ user, meetings, onSelectMeeting, on
         <AppLogo size={56} animate className="-mt-1" />
       </header>
 
-      {/* Category Tabs & Sort Toggles */}
+      {/* Filters Area */}
       <div className="flex flex-col gap-5 sticky top-24 z-10 bg-[#F8FAFC]/95 backdrop-blur-md py-3 -mx-2 px-2">
+        {/* Category Tabs */}
         <section className="flex gap-2 overflow-x-auto scrollbar-hide">
           {CATEGORIES.map(cat => (
             <button
@@ -76,9 +126,35 @@ const HomeView: React.FC<HomeViewProps> = ({ user, meetings, onSelectMeeting, on
           ))}
         </section>
 
-        <section className="flex items-center justify-between px-1">
-          <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-            {selectedCategory} 모임 ({filteredAndSortedMeetings.length})
+        {/* Date Filter Tabs */}
+        <section className="flex items-center gap-2 px-1">
+          {[
+            { id: 'ALL', label: '전체' },
+            { id: 'TODAY', label: '오늘' },
+            { id: 'TOMORROW', label: '내일' },
+            { id: 'DAY_AFTER', label: '모레' }
+          ].map((df) => (
+            <button
+              key={df.id}
+              onClick={() => setDateFilter(df.id as DateFilter)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all ${
+                dateFilter === df.id
+                  ? 'bg-teal-50 text-teal-600 border border-teal-200'
+                  : 'bg-white text-slate-400 border border-slate-100 hover:bg-slate-50'
+              }`}
+            >
+              {df.label}
+              <span className={`text-[9px] ${dateFilter === df.id ? 'text-teal-400' : 'text-slate-300'}`}>
+                {dateCounts[df.id as DateFilter]}
+              </span>
+            </button>
+          ))}
+        </section>
+
+        {/* Sort Toggles */}
+        <section className="flex items-center justify-between px-1 mt-1">
+          <h3 className="text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em]">
+            {selectedCategory} / {dateFilter === 'ALL' ? '전체 일정' : dateFilter === 'TODAY' ? '오늘' : dateFilter === 'TOMORROW' ? '내일' : '모레'}
           </h3>
           <div className="flex items-center gap-4">
             <button 
@@ -161,7 +237,10 @@ const HomeView: React.FC<HomeViewProps> = ({ user, meetings, onSelectMeeting, on
                 </svg>
              </div>
              <p className="text-slate-400 text-sm font-medium">
-               참여 가능한 모임이 아직 없어요.<br/>먼저 모임을 제안해 볼까요?
+               {dateFilter === 'ALL' 
+                 ? '참여 가능한 모임이 아직 없어요.' 
+                 : `${dateFilter === 'TODAY' ? '오늘' : dateFilter === 'TOMORROW' ? '내일' : '모레'} 예정된 모임이 없습니다.`}
+               <br/>먼저 모임을 제안해 볼까요?
              </p>
           </div>
         )}

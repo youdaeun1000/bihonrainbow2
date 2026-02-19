@@ -62,9 +62,9 @@ const ChatRoomView: React.FC<ChatRoomViewProps> = ({ user, meeting, onBack, onSh
   const filteredMessages = messages.filter(msg => !user.blockedUserIds.includes(msg.senderId));
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50 overflow-hidden page-enter">
+    <div className="flex flex-col h-full bg-slate-50 overflow-hidden">
       {/* Chat Header */}
-      <header className="h-16 flex items-center justify-between px-6 bg-white border-b border-slate-100 shrink-0">
+      <header className="h-16 flex items-center justify-between px-6 bg-white border-b border-slate-100 shrink-0 z-10">
         <div className="flex items-center gap-3 overflow-hidden">
           <button onClick={onBack} className="p-2 -ml-2 text-slate-400 hover:text-slate-600 shrink-0">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -135,23 +135,23 @@ const ChatRoomView: React.FC<ChatRoomViewProps> = ({ user, meeting, onBack, onSh
       </div>
 
       {/* Input Area */}
-      <div className="p-6 bg-white border-t border-slate-100 shrink-0">
+      <div className="p-4 bg-white border-t border-slate-100 shrink-0 z-10 pb-safe">
         <form onSubmit={handleSend} className="flex gap-2">
           <input
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             placeholder="메시지를 입력해 주세요..."
-            className="flex-1 px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-medium focus:outline-none focus:bg-slate-100 transition-all"
+            className="flex-1 px-5 py-3.5 bg-slate-50 border-none rounded-2xl text-sm font-medium focus:outline-none focus:bg-slate-100 transition-all"
           />
           <button 
             type="submit"
             disabled={!inputText.trim()}
-            className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${
+            className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${
               !inputText.trim() ? 'bg-slate-100 text-slate-300' : 'bg-teal-500 text-white shadow-lg shadow-teal-500/20 active:scale-90'
             }`}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 rotate-45">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 rotate-45">
               <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
             </svg>
           </button>
